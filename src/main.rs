@@ -4,7 +4,7 @@ const BLOOM_FILTER_SIZE: u64 = 16;
 
 struct BloomFilter {
     filter: u16,         // A 16-bit filter
-    seeds: Vec<u16>  // Seeds to be used in the different hashing functions
+    seeds: Vec<u64>  // Seeds to be used in the different hashing functions
 }
 
 impl BloomFilter {
@@ -12,9 +12,9 @@ impl BloomFilter {
        BloomFilter { filter: 0, seeds: vec![142, 112, 654] } 
     }
 
-    fn hash<T: Hash>(&self, item: &T, seed: u16) -> u64 {
+    fn hash<T: Hash>(&self, item: &T, seed: u64) -> u64 {
         let mut hasher = DefaultHasher::new();
-        hasher.write_u16(seed);
+        hasher.write_u64(seed);
         item.hash(&mut hasher);
         hasher.finish() % BLOOM_FILTER_SIZE
     }
@@ -26,26 +26,20 @@ impl BloomFilter {
             let index = self.hash(item, seed);
             indices.push(index);
 
-            self.filter = self.filter | (1 << index);
+            self.filter |= 1 << index;
         }
 
-        print!("Indices: ");
-        for index in indices {
-            print!("{} ", index);
-        }
-        println!();
+        println!("Indices: {:?}", indices);
     }
 
     pub fn contains<T: Hash>(&self, item: &T) -> bool {
-        let present = true;
         for &seed in &self.seeds {
             let index = self.hash(item, seed);
-            let result = self.filter & (1 << index);
-            if result == 0 {
+            if self.filter & (1 << index) == 0 {
                 return false;
             }
         }
-        present
+        true
     }
 }
 
